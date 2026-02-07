@@ -1,5 +1,28 @@
 // Main plugin code - runs in the Figma sandbox
 figma.showUI(__html__, { width: 600, height: 600 });
+
+// Function to get text from selected layer
+function getSelectedText() {
+    const selection = figma.currentPage.selection;
+    
+    // Find the first text layer in selection
+    for (const node of selection) {
+        if (node.type === "TEXT") {
+            return node.characters;
+        }
+    }
+    
+    return null;
+}
+
+// Send initial selection status and text on load
+const initialText = getSelectedText();
+figma.ui.postMessage({
+    type: 'selection-changed',
+    hasTextSelection: initialText !== null,
+    textContent: initialText || ''
+});
+
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
     if (msg.type === 'apply-copy') {
@@ -60,21 +83,22 @@ figma.ui.onmessage = async (msg) => {
         });
     }
     if (msg.type === 'check-selection') {
-        // Check if a text layer is selected
-        const selection = figma.currentPage.selection;
-        const hasTextSelection = selection.some(node => node.type === "TEXT");
+        // Check if a text layer is selected and send its content
+        const textContent = getSelectedText();
         figma.ui.postMessage({
-            type: 'selection-status',
-            hasTextSelection: hasTextSelection
+            type: 'selection-changed',
+            hasTextSelection: textContent !== null,
+            textContent: textContent || ''
         });
     }
 };
+
 // Monitor selection changes
 figma.on('selectionchange', () => {
-    const selection = figma.currentPage.selection;
-    const hasTextSelection = selection.some(node => node.type === "TEXT");
+    const textContent = getSelectedText();
     figma.ui.postMessage({
-        type: 'selection-status',
-        hasTextSelection: hasTextSelection
+        type: 'selection-changed',
+        hasTextSelection: textContent !== null,
+        textContent: textContent || ''
     });
 });

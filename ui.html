@@ -674,6 +674,19 @@
         showToast(msg.message);
       }
       
+      if (msg.type === 'selection-changed') {
+        hasTextSelection = msg.hasTextSelection;
+        
+        // Populate input field with selected text content
+        if (msg.textContent && msg.textContent.trim()) {
+          promptInput.value = msg.textContent;
+          // Trigger resize
+          promptInput.style.height = 'auto';
+          promptInput.style.height = Math.min(promptInput.scrollHeight, 80) + 'px';
+        }
+      }
+      
+      // Legacy support for old selection-status messages
       if (msg.type === 'selection-status') {
         hasTextSelection = msg.hasTextSelection;
       }
