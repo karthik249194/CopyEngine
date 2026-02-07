@@ -43,14 +43,20 @@ export default async function handler(req, res) {
   ["option 1", "option 2", "option 3", "option 4", "option 5"]`;
   
       // Call GROQ API directly with fetch
-      const response = await fetch('https://copy-engine-chi.vercel.app/api/generate', {
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
         },
         body: JSON.stringify({
-          prompt: 'your user input here',
-          tone: 'neutral'
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `User Scenario: ${prompt}` }
+          ],
+          temperature: 0.7,
+          max_tokens: 1024
         })
       });
     
@@ -58,8 +64,9 @@ export default async function handler(req, res) {
   
       if (!response.ok) {
         const error = await response.json();
+        console.error('Groq API error:', error); // Add this line
         throw new Error(error.error?.message || 'API request failed');
-      }
+      }      
   
       const data = await response.json();
       const content = data.choices[0].message.content;
