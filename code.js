@@ -1,6 +1,9 @@
 // Main plugin code - runs in the Figma sandbox
 figma.showUI(__html__, { width: 600, height: 600 });
 
+// Store the currently selected text node
+let selectedTextNode = null;
+
 // Function to get text from selected layer
 function getSelectedText() {
     const selection = figma.currentPage.selection;
@@ -8,10 +11,12 @@ function getSelectedText() {
     // Find the first text layer in selection
     for (const node of selection) {
         if (node.type === "TEXT") {
+            selectedTextNode = node; // Store reference
             return node.characters;
         }
     }
     
+    selectedTextNode = null; // Clear if no text layer
     return null;
 }
 
@@ -26,43 +31,30 @@ figma.ui.postMessage({
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
     if (msg.type === 'apply-copy') {
-        // Check if a text layer is selected
-        const selection = figma.currentPage.selection;
-        if (selection.length === 0) {
+        // Use the stored text node instead of current selection
+        if (!selectedTextNode) {
             figma.ui.postMessage({
                 type: 'notification',
-                message: 'No text layer selected. Text copied to clipboard instead.'
+                message: 'No text layer selected. Please select a text layer first.'
             });
             return;
         }
-        let applied = false;
-        for (const node of selection) {
-            if (node.type === "TEXT") {
-                try {
-                    // Load the font before modifying the text
-                    await figma.loadFontAsync(node.fontName);
-                    node.characters = msg.text;
-                    applied = true;
-                }
-                catch (error) {
-                    console.error('Error applying text:', error);
-                    figma.ui.postMessage({
-                        type: 'notification',
-                        message: 'Error applying text to layer'
-                    });
-                }
-            }
-        }
-        if (applied) {
+
+        try {
+            // Load the font before modifying the text
+            await figma.loadFontAsync(selectedTextNode.fontName);
+            selectedTextNode.characters = msg.text;
+            
             figma.ui.postMessage({
                 type: 'notification',
                 message: 'Text applied to selected layer!'
             });
         }
-        else {
+        catch (error) {
+            console.error('Error applying text:', error);
             figma.ui.postMessage({
                 type: 'notification',
-                message: 'No text layer selected. Text copied to clipboard instead.'
+                message: 'Error applying text to layer'
             });
         }
     }
