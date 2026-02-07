@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CopyEngine</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* Light mode colors */
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f8f8;
+      --bg-tertiary: #f5f5f5;
+      --text-primary: #000000;
+      --text-secondary: #333333;
+      --text-tertiary: #666666;
+      --text-muted: #999999;
+      --border-primary: #e5e5e5;
+      --border-secondary: #d0d0d0;
+      --border-hover: #b0b0b0;
+      --hover-bg: #f0f0f0;
+      --card-bg: #f8f8f8;
+      --card-hover: #eef5ff;
+      --scrollbar-track: #f5f5f5;
+      --scrollbar-thumb: #d0d0d0;
+      --scrollbar-thumb-hover: #b0b0b0;
+      --input-bg: #ffffff;
+      --chip-bg: #f5f5f5;
+      --chip-border: #e0e0e0;
+      --chip-hover-bg: #e8e8e8;
+      --chip-hover-border: #d0d0d0;
+    }
+
+    [data-theme="dark"] {
+      /* Dark mode colors */
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #242424;
+      --bg-tertiary: #2a2a2a;
+      --text-primary: #ffffff;
+      --text-secondary: #e0e0e0;
+      --text-tertiary: #b0b0b0;
+      --text-muted: #808080;
+      --border-primary: #333333;
+      --border-secondary: #404040;
+      --border-hover: #555555;
+      --hover-bg: #2a2a2a;
+      --card-bg: #242424;
+      --card-hover: #1a2332;
+      --scrollbar-track: #2a2a2a;
+      --scrollbar-thumb: #404040;
+      --scrollbar-thumb-hover: #555555;
+      --input-bg: #1e1e1e;
+      --chip-bg: #2a2a2a;
+      --chip-border: #404040;
+      --chip-hover-bg: #333333;
+      --chip-hover-border: #505050;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 500px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-primary);
+      background: var(--bg-primary);
+    }
+
+    .header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: background 0.2s;
+      color: var(--text-tertiary);
+    }
+
+    .theme-toggle:hover {
+      background: var(--hover-bg);
+    }
+
+    .theme-toggle svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Main content */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Input section */
+    .input-section {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-primary);
+    }
+
+    .tone-chips {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      margin-bottom: 0;
+      flex-wrap: wrap;
+    }
+
+    .tone-chip {
+      padding: 5px 12px;
+      font-size: 11px;
+      background: var(--chip-bg);
+      border: 1px solid var(--chip-border);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .tone-chip:hover {
+      background: var(--chip-hover-bg);
+      border-color: var(--chip-hover-border);
+    }
+
+    .tone-chip.active {
+      background: #0066ff;
+      color: white;
+      border-color: #0066ff;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 50px;
+      max-height: 80px;
+      padding: 8px 10px;
+      border: 1px solid var(--border-secondary);
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s;
+      background: var(--input-bg);
+      color: var(--text-primary);
+    }
+
+    textarea:focus {
+      border-color: #0066ff;
+    }
+
+    textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .generate-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px;
+      background: #0066ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .generate-btn:hover {
+      background: #0052cc;
+    }
+
+    .generate-btn:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+
+    /* Results section */
+    .results-section {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 12px 12px;
+    }
+
+    .results-section::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .results-section::-webkit-scrollbar-track {
+      background: var(--scrollbar-track);
+    }
+
+    .results-section::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 3px;
+    }
+
+    .results-section::-webkit-scrollbar-thumb:hover {
+      background: var(--scrollbar-thumb-hover);
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-muted);
+      text-align: center;
+      padding: 20px;
+    }
+
+    .empty-state svg {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 10px;
+      opacity: 0.3;
+    }
+
+    .empty-state p {
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-tertiary);
+    }
+
+    .spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid var(--border-primary);
+      border-top-color: #0066ff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-state p {
+      font-size: 12px;
+    }
+
+    .result-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-primary);
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      position: relative;
+      transition: all 0.2s;
+      cursor: pointer;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .result-card:hover {
+      background: var(--card-hover);
+      border-color: #0066ff;
+      transform: translateX(2px);
+    }
+
+    .result-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .result-text {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      word-wrap: break-word;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      justify-content: flex-end;
+    }
+
+    .copy-btn {
+      padding: 4px 10px;
+      font-size: 10px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-secondary);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .copy-btn:hover {
+      background: var(--hover-bg);
+      border-color: var(--border-hover);
+    }
+
+    .copy-btn.copied {
+      background: #00aa00;
+      color: white;
+      border-color: #00aa00;
+    }
+
+    .copy-btn svg {
+      width: 11px;
+      height: 11px;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 11px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* Error message */
+    .error-message {
+      background: #fff0f0;
+      border: 1px solid #ffcccc;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #cc0000;
+    }
+
+    [data-theme="dark"] .error-message {
+      background: #3a1a1a;
+      border-color: #5a2a2a;
+      color: #ff6666;
+    }
+
+    /* Error message */
+    .error-message {
+      background: #fff0f0;
+      border: 1px solid #ffcccc;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #cc0000;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <h1>CopyEngine</h1>
+    <div class="header-actions">
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+        <svg class="sun-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="content">
+    <!-- Input section -->
+    <div class="input-section">
+      <div class="input-wrapper">
+        <textarea id="promptInput" placeholder="Enter a scenario (e.g., 'Error message for failed payment')..." autofocus></textarea>
+      </div>
+      <div class="tone-chips">
+        <button class="tone-chip active" data-tone="neutral">Neutral</button>
+        <button class="tone-chip" data-tone="empathetic">Empathetic</button>
+        <button class="tone-chip" data-tone="encouraging">Encouraging</button>
+        <button class="tone-chip" data-tone="direct">Direct</button>
+        <button class="tone-chip" data-tone="Professional">Professional</button>
+      </div>
+      <button class="generate-btn" id="generateBtn">Generate Copy</button>
+    </div>
+
+    <!-- Results section -->
+    <div class="results-section" id="resultsSection">
+      <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+        </svg>
+        <p>Select a tone, enter a scenario, and generate copy</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // State
+    let hasTextSelection = false;
+    let selectedTone = 'neutral';
+    let hasGeneratedOnce = false;
+    let lastPrompt = '';
+    
+    // Backend API endpoint - REPLACE THIS WITH YOUR DEPLOYED URL
+    const BACKEND_URL = 'https://copy-engine-chi.vercel.app/';
+
+    // Set dark mode as default
+    document.documentElement.setAttribute('data-theme', 'dark');
+
+    // DOM elements
+    const themeToggle = document.getElementById('themeToggle');
+    const promptInput = document.getElementById('promptInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const resultsSection = document.getElementById('resultsSection');
+    const toast = document.getElementById('toast');
+    const toneChips = document.querySelectorAll('.tone-chip');
+
+    // Theme toggle
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      showToast(`Switched to ${newTheme} mode`);
+    });
+
+    // Auto-resize textarea
+    promptInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+    });
+
+    // Tone chips
+    toneChips.forEach(chip => {
+      chip.addEventListener('click', function() {
+        toneChips.forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        selectedTone = this.dataset.tone;
+        
+        // Auto-regenerate if already generated once
+        if (hasGeneratedOnce && lastPrompt) {
+          generateCopy(lastPrompt);
+        }
+      });
+    });
+
+    // Check selection on startup
+    parent.postMessage({ pluginMessage: { type: 'check-selection' } }, '*');
+
+    // Generate button
+    generateBtn.addEventListener('click', async () => {
+      const prompt = promptInput.value.trim();
+      
+      if (!prompt) {
+        showToast('Please enter a scenario first');
+        return;
+      }
+
+      await generateCopy(prompt);
+    });
+
+    // Generate copy using backend proxy
+// Simplified generate function - NO API KEY NEEDED
+async function generateCopy(userPrompt) {
+  generateBtn.disabled = true;
+  
+  resultsSection.innerHTML = `
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Generating...</p>
+    </div>
+  `;
+
+  try {
+    // Call YOUR backend instead of GROQ directly
+    const response = await fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        prompt: userPrompt,
+        tone: selectedTone
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to generate copy');
+    }
+
+    const data = await response.json();
+    
+    // Mark success
+    hasGeneratedOnce = true;
+    lastPrompt = userPrompt;
+
+    // Display results
+    displayResults(data.options);
+
+  } catch (error) {
+    resultsSection.innerHTML = `
+      <div class="error-message">
+        <strong>⚠️ Error:</strong><br>
+        ${error.message}
+        <br><br>
+        Please try again in a moment.
+      </div>
+    `;
+  } finally {
+    generateBtn.disabled = false;
+  }
+}
+
+
+    // Demo mode with sample data
+    window.useDemoMode = function() {
+      const demoData = {
+        'generic': [
+          "Unable to process your request. Please try again.",
+          "We couldn't complete that action. Don't worry—check your details and try again.",
+          "Oops! Something didn't work. Let's give it another shot!",
+          "Error occurred",
+          "The request could not be completed. Please verify your information and retry."
+        ],
+        'neutral': [
+          "Action could not be completed.",
+          "Unable to proceed with this action.",
+          "Request cannot be processed.",
+          "Error",
+          "This action is currently unavailable."
+        ],
+        'empathetic': [
+          "We understand this is frustrating. Let's try that again together.",
+          "Sorry about that! We're here to help. Please try once more.",
+          "We know this isn't ideal. Give it another try and we'll sort it out.",
+          "Apologies for the trouble. Try again?",
+          "We're sorry this happened. Let's work through this together."
+        ]
+      };
+
+      const selectedData = demoData[selectedTone] || demoData['generic'];
+      displayResults(selectedData);
+      showToast('✓ Using demo mode (sample data)');
+    };
+
+    // Display results
+    function displayResults(options) {
+      resultsSection.innerHTML = options.map((option, index) => {
+        const cleanOption = option.replace(/^["'\d\.\-\s]+/, '').replace(/["']$/, '').trim();
+        return `
+          <div class="result-card" data-text="${cleanOption.replace(/"/g, '&quot;')}" onclick="applyToFigma(this)">
+            <div class="result-text">${cleanOption}</div>
+            <div class="result-actions">
+              <button class="copy-btn" onclick="event.stopPropagation(); copyToClipboard(this)" data-text="${cleanOption.replace(/"/g, '&quot;')}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                </svg>
+                Copy
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Apply to Figma on card click
+    function applyToFigma(card) {
+      const text = card.dataset.text;
+      parent.postMessage({ pluginMessage: { type: 'apply-copy', text: text } }, '*');
+    }
+
+    // Copy to clipboard
+    function copyToClipboard(btn) {
+      const text = btn.dataset.text;
+      navigator.clipboard.writeText(text);
+      
+      const originalHTML = btn.innerHTML;
+      btn.classList.add('copied');
+      btn.innerHTML = `
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        Copied!
+      `;
+      
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = originalHTML;
+      }, 1500);
+      
+      showToast('Copied to clipboard!');
+    }
+
+    // Show toast notification
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+
+    // Listen for messages from plugin code
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      
+      if (msg.type === 'notification') {
+        showToast(msg.message);
+      }
+      
+      if (msg.type === 'selection-status') {
+        hasTextSelection = msg.hasTextSelection;
+      }
+    };
+  </script>
+</body>
+</html>
