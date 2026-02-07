@@ -41,20 +41,41 @@ figma.ui.onmessage = async (msg) => {
         }
 
         try {
-            // Load the font before modifying the text
-            await figma.loadFontAsync(selectedTextNode.fontName);
+            // Handle mixed fonts by loading all unique fonts
+            const fontName = selectedTextNode.fontName;
+            
+            if (fontName === figma.mixed) {
+                // Text has mixed fonts - load all unique fonts used
+                const len = selectedTextNode.characters.length;
+                const fonts = new Set();
+                
+                for (let i = 0; i < len; i++) {
+                    const font = selectedTextNode.getRangeFontName(i, i + 1);
+                    fonts.add(JSON.stringify(font));
+                }
+                
+                // Load all unique fonts
+                for (const fontStr of fonts) {
+                    await figma.loadFontAsync(JSON.parse(fontStr));
+                }
+            } else {
+                // Single font - load it
+                await figma.loadFontAsync(fontName);
+            }
+            
+            // Apply the new text
             selectedTextNode.characters = msg.text;
             
             figma.ui.postMessage({
                 type: 'notification',
-                message: 'Text applied to selected layer!'
+                message: '✓ Text applied!'
             });
         }
         catch (error) {
             console.error('Error applying text:', error);
             figma.ui.postMessage({
                 type: 'notification',
-                message: 'Error applying text to layer'
+                message: 'Error: ' + error.message
             });
         }
     }
