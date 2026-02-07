@@ -68,15 +68,7 @@ const response = await fetch('https://copy-engine-chi.vercel.app/api/generate', 
   })
 });
 
-const text = await response.text(); // Get raw text first
-console.log('Raw response:', text); // Log it
 
-const data = JSON.parse(text); // Then try to parse
-console.log('Parsed data:', data);
-
-} catch (error) {
-console.error('Full error:', error);
-}
 
     if (!response.ok) {
       const error = await response.json();

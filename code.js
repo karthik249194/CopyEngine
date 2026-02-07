@@ -1,5 +1,5 @@
 // Main plugin code - runs in the Figma sandbox
-figma.showUI(__html__, { width: 600, height: 500 });
+figma.showUI(__html__, { width: 600, height: 600 });
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
     if (msg.type === 'apply-copy') {
