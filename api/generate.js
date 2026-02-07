@@ -43,22 +43,26 @@ export default async function handler(req, res) {
   ["option 1", "option 2", "option 3", "option 4", "option 5"]`;
   
       // Call GROQ API directly with fetch
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      const response = await fetch('https://copy-engine-chi.vercel.app/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: `User Scenario: ${prompt}` }
-          ],
-          temperature: 0.7,
-          max_tokens: 1024
+          prompt: 'your user input here',
+          tone: 'neutral'
         })
       });
+    
+      const text = await response.text(); // Get raw text first
+      console.log('Raw response:', text); // Log it
+      
+      const data = JSON.parse(text); // Then try to parse
+      console.log('Parsed data:', data);
+      
+    } catch (error) {
+      console.error('Full error:', error);
+    }
   
       if (!response.ok) {
         const error = await response.json();
