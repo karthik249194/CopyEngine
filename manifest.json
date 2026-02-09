@@ -1,10 +1,11 @@
 {
   "name": "CopyEngine",
-  "id": "CopyEngine-ux-writer",
+  "id": "1602747951481753437",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
   "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
   "networkAccess": {
     "allowedDomains": [
       "https://copy-engine-chi.vercel.app/",
