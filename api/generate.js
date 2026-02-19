@@ -36,8 +36,8 @@ export default async function handler(req, res) {
     const promptLength = prompt.length;
     
     // Calculate length ranges based on input
-    const minLength = promptLength; // Minimum = input length
-    const maxLength = Math.min(promptLength * 2, promptLength + 20); // Max = 2x input or +20 chars
+    const minLength = 4;
+    const maxLength = promptLength + 20;
     
     // ============================================
     // TONE-SPECIFIC SYSTEM PROMPTS (3 TONES)
