@@ -102,6 +102,12 @@ You must preserve the MEANING and CONTEXT of the original text, but change the t
 - DO NOT: Generate new unrelated placeholder text
 - DO NOT: Ignore what the original text is about
 
+### IMPORTANT: Numbers & Special Characters
+If the original text contains numbers (e.g. "50%", "$9.99", "3 items") or special characters (e.g. "!", "→", "#", "@"), you MUST include them in your rewrite.
+- Numbers and values carry meaning — preserve them
+- Example: "Upload failed (2.4 MB limit)" → encouraging: "Almost there! Your file is just over the 2.4 MB limit — try compressing it."
+- Do NOT drop numbers or special characters from your rewrites
+
 Example of correct behavior:
 - Input: "Your payment could not be processed." (38 chars)
 - WRONG encouraging output: "Let's go!" (too short, ignores meaning)  

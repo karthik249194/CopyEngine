@@ -462,7 +462,6 @@
     let hasGeneratedOnce = false;
     let lastPrompt = '';
     
-    // Backend API endpoint - REPLACE THIS WITH YOUR DEPLOYED URL
     const BACKEND_URL = 'https://copy-engine-chi.vercel.app/api/generate';
 
     // Set dark mode as default
@@ -677,6 +676,7 @@
     // Listen for messages from plugin code
     window.onmessage = (event) => {
       const msg = event.data.pluginMessage;
+      if (!msg) return;
       
       if (msg.type === 'notification') {
         showToast(msg.message);
@@ -684,6 +684,32 @@
       
       if (msg.type === 'selection-status') {
         hasTextSelection = msg.hasTextSelection;
+      }
+
+      // Populate textarea when a text layer is selected
+      if (msg.type === 'selection-changed') {
+        hasTextSelection = msg.hasTextSelection;
+
+        if (msg.hasTextSelection && msg.textContent) {
+          // Populate textarea with layer text (preserves numbers, special chars, line breaks)
+          promptInput.value = msg.textContent;
+
+          // Auto-resize textarea to fit content
+          promptInput.style.height = 'auto';
+          promptInput.style.height = Math.min(promptInput.scrollHeight, 80) + 'px';
+
+          // Show a subtle indicator that text was pulled from the layer
+          showToast('✦ Layer text loaded');
+
+          // Auto-regenerate if we've already generated once
+          if (hasGeneratedOnce) {
+            lastPrompt = msg.textContent;
+            generateCopy(msg.textContent);
+          }
+        } else if (!msg.hasTextSelection) {
+          // Clear only if no text layer is selected and field was auto-populated
+          // Don't clear if user manually typed something
+        }
       }
     };
   </script>
