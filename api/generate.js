@@ -94,10 +94,18 @@ export default async function handler(req, res) {
     // SYSTEM PROMPT — ROLE + RULES
     // ============================================
 
-    const systemPrompt = `You are a specialized UX Writer for a Figma plugin. Your task is to rewrite UI copy in a specific tone while respecting spatial constraints.
+    const systemPrompt = `You are a specialized UX Writer for a Figma plugin. Your task is to REWRITE the given UI copy in a specific tone while respecting spatial layout constraints.
 
-### Your Role
-Rewrite UI copy to match the requested tone, keeping it within the allowed character range.
+### IMPORTANT: What "Rewrite" Means
+You must preserve the MEANING and CONTEXT of the original text, but change the tone and phrasing.
+- DO: Rephrase the same message in a different tone
+- DO NOT: Generate new unrelated placeholder text
+- DO NOT: Ignore what the original text is about
+
+Example of correct behavior:
+- Input: "Your payment could not be processed." (38 chars)
+- WRONG encouraging output: "Let's go!" (too short, ignores meaning)  
+- CORRECT encouraging output: "Almost there! Double-check your details and try again." (54 chars)
 
 ### Tone: ${toneConfig.label}
 ${toneConfig.description}
@@ -109,11 +117,11 @@ ${toneConfig.instructions.map(i => `- ${i}`).join('\n')}
 ### Length Constraint (CRITICAL)
 - Original text is ${promptLength} characters
 - You MUST generate options between ${minLength} and ${maxLength} characters
-- This is a hard limit — do NOT exceed ${maxLength} characters
-- Do NOT go below ${minLength} characters
+- Each option MUST be at least ${minLength} characters — short exclamations are NOT acceptable for longer inputs
+- Do NOT exceed ${maxLength} characters
 
 ### Output Format
-Return a JSON array of exactly 5 options. No quotes around the array, no explanation, no preamble.
+Return a JSON array of exactly 5 options. No explanation, no preamble.
 ["option 1", "option 2", "option 3", "option 4", "option 5"]`;
 
     // ============================================
@@ -124,27 +132,33 @@ Return a JSON array of exactly 5 options. No quotes around the array, no explana
       { role: 'system', content: systemPrompt }
     ];
 
-    // Tone-specific few-shot examples
+    // Tone-specific few-shot examples (short AND long to teach length awareness)
     if (tone === 'neutral') {
       messages.push(
-        { role: 'user', content: 'Rewrite: "You need to fill out the form to proceed."' },
-        { role: 'assistant', content: '["Complete form to continue.", "Fill in the form first.", "Form required to proceed.", "Please complete the form.", "Finish the form to go on."]' },
+        // Short example
         { role: 'user', content: 'Rewrite: "Save"' },
-        { role: 'assistant', content: '["Save", "Keep", "Apply", "Confirm", "Done"]' }
+        { role: 'assistant', content: '["Save", "Keep", "Apply", "Confirm", "Done"]' },
+        // Long example — teaches the model to match length
+        { role: 'user', content: 'Rewrite: "You need to fill out the form before you can proceed to the next step."' },
+        { role: 'assistant', content: '["Complete the form to continue.", "Fill out the form to move forward.", "Form must be completed before proceeding.", "Finish the form to go to the next step.", "All fields required before you can continue."]' }
       );
     } else if (tone === 'empathetic') {
       messages.push(
-        { role: 'user', content: 'Rewrite: "Invalid password."' },
-        { role: 'assistant', content: '["That password isn\'t quite right. Try again?", "Hmm, that didn\'t match. Give it another go?", "Password didn\'t work — no worries, try again.", "Not quite — double-check and retry.", "That one didn\'t work. Want to try again?"]' },
+        // Short example
         { role: 'user', content: 'Rewrite: "Error"' },
-        { role: 'assistant', content: '["Oops", "Sorry!", "Uh oh", "My bad", "Whoops"]' }
+        { role: 'assistant', content: '["Oops", "Sorry!", "Uh oh", "My bad", "Whoops"]' },
+        // Long example — teaches the model to match length with warmth
+        { role: 'user', content: 'Rewrite: "Your payment could not be processed. Please check your details."' },
+        { role: 'assistant', content: '["We\'re sorry — your payment didn\'t go through. Let\'s check your details.", "That payment didn\'t work, but we\'re here to help you sort it out.", "No worries! Your payment hit a snag — double-check your info and retry.", "We couldn\'t process that. Take a look at your details and try again.", "Something went wrong with your payment. We\'ll help you get it sorted."]' }
       );
     } else if (tone === 'encouraging') {
       messages.push(
-        { role: 'user', content: 'Rewrite: "Profile 50% complete."' },
-        { role: 'assistant', content: '["You\'re halfway there! Add a photo to stand out.", "Great start! Keep going to finish your profile.", "50% done — you\'re on a roll!", "Almost halfway! A few more steps to shine.", "Nice progress! Let\'s keep the momentum going."]' },
+        // Short example
         { role: 'user', content: 'Rewrite: "Submit"' },
-        { role: 'assistant', content: '["Let\'s go!", "Send it!", "You\'re ready!", "Go for it!", "Do it!"]' }
+        { role: 'assistant', content: '["Let\'s go!", "Send it!", "You\'re ready!", "Go for it!", "Do it!"]' },
+        // Long example — teaches the model to match length with positivity
+        { role: 'user', content: 'Rewrite: "Your payment could not be processed. Please check your details."' },
+        { role: 'assistant', content: '["Almost there! Just check your payment details and try again.", "You\'re so close! A quick look at your details and you\'ll be set.", "Don\'t give up! Update your payment info and let\'s get you through.", "Nearly done — just verify your details and hit submit again!", "One more step! Double-check your payment info and you\'re all set."]' }
       );
     }
 
