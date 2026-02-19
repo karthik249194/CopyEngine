@@ -434,11 +434,9 @@
         <textarea id="promptInput" placeholder="Enter a scenario (e.g., 'Error message for failed payment')..." autofocus></textarea>
       </div>
       <div class="tone-chips">
-        <button class="tone-chip active" data-tone="neutral">Neutral</button>
+        <button class="tone-chip active" data-tone="neutral">Short & Simple</button>
         <button class="tone-chip" data-tone="empathetic">Empathetic</button>
         <button class="tone-chip" data-tone="encouraging">Encouraging</button>
-        <button class="tone-chip" data-tone="direct">Direct</button>
-        <button class="tone-chip" data-tone="Professional">Professional</button>
       </div>
       <button class="generate-btn" id="generateBtn">Generate Copy</button>
     </div>
@@ -464,8 +462,8 @@
     let hasGeneratedOnce = false;
     let lastPrompt = '';
     
-    // Backend API endpoint
-    const BACKEND_URL = 'https://copy-engine-chi.vercel.app/';
+    // Backend API endpoint - REPLACE THIS WITH YOUR DEPLOYED URL
+    const BACKEND_URL = 'https://copy-engine-chi.vercel.app/api/generate';
 
     // Set dark mode as default
     document.documentElement.setAttribute('data-theme', 'dark');
@@ -525,6 +523,7 @@
     async function generateCopy(userPrompt) {
       generateBtn.disabled = true;
       
+      // Show loading state
       resultsSection.innerHTML = `
         <div class="loading-state">
           <div class="spinner"></div>
@@ -533,10 +532,15 @@
       `;
 
       try {
-        const response = await fetch('https://copy-engine-chi.vercel.app/api/generate', {
+        console.log('Calling backend API...');
+        console.log('Prompt:', userPrompt);
+        console.log('Tone:', selectedTone);
+
+        // Call YOUR backend - no API key needed!
+        const response = await fetch(BACKEND_URL, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             prompt: userPrompt,
@@ -544,35 +548,39 @@
           })
         });
 
-        const text = await response.text();
-        console.log('Status:', response.status);
-        console.log('Raw response:', text);
+        console.log('Response status:', response.status);
 
         if (!response.ok) {
-          console.error('Error response:', text);
-          throw new Error(text || 'Failed to generate copy');
+          throw new Error('Failed to generate copy. Please try again.');
         }
 
-        const data = JSON.parse(text);
-        console.log('Parsed data:', data);
-        
-        // Mark success
+        const data = await response.json();
+        console.log('API Response:', data);
+
+        if (!data.success || !data.options || data.options.length === 0) {
+          throw new Error('No valid options generated');
+        }
+
+        // Mark that we've successfully generated once and save the prompt
         hasGeneratedOnce = true;
         lastPrompt = userPrompt;
 
-        // Display results
         displayResults(data.options);
 
       } catch (error) {
-        console.error('Full error:', error);
+        console.error('Error:', error);
+        const errorMsg = error.message || 'Unknown error occurred';
+        
+        // Simple error message for backend failures
         resultsSection.innerHTML = `
           <div class="error-message">
-            <strong>⚠️ Error:</strong><br>
-            ${error.message}
+            <strong>⚠️ Service Temporarily Unavailable</strong><br>
+            ${errorMsg}
             <br><br>
-            Please try again in a moment.
+            <small>Please try again in a moment. If the problem persists, the service may be experiencing high load.</small>
           </div>
         `;
+        showToast('Failed to generate copy: ' + errorMsg);
       } finally {
         generateBtn.disabled = false;
       }
@@ -674,19 +682,6 @@
         showToast(msg.message);
       }
       
-      if (msg.type === 'selection-changed') {
-        hasTextSelection = msg.hasTextSelection;
-        
-        // Populate input field with selected text content
-        if (msg.textContent && msg.textContent.trim()) {
-          promptInput.value = msg.textContent;
-          // Trigger resize
-          promptInput.style.height = 'auto';
-          promptInput.style.height = Math.min(promptInput.scrollHeight, 80) + 'px';
-        }
-      }
-      
-      // Legacy support for old selection-status messages
       if (msg.type === 'selection-status') {
         hasTextSelection = msg.hasTextSelection;
       }

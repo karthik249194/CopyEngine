@@ -30,70 +30,167 @@ export default async function handler(req, res) {
     }
 
     // ============================================
-    // LENGTH-AWARE GENERATION - NEW FEATURE
+    // LENGTH CALCULATION
     // ============================================
     
-    // Calculate character count for length-aware responses
     const promptLength = prompt.length;
-    let lengthGuidance = '';
     
-    if (promptLength <= 20) {
-      // Very short input - micro-copy (buttons, labels, tags)
-      lengthGuidance = `CRITICAL: The user's input is only ${promptLength} characters. Generate VERY SHORT alternatives (10-25 characters max). Examples: button labels, tags, status messages, short CTAs. Keep it ultra-concise.`;
-    } else if (promptLength <= 50) {
-      // Short input - concise copy (error messages, tooltips)
-      lengthGuidance = `The user's input is ${promptLength} characters. Generate SHORT alternatives (30-60 characters max). Keep responses brief and punchy.`;
-    } else if (promptLength <= 100) {
-      // Medium input - normal copy (notifications, descriptions)
-      lengthGuidance = `The user's input is ${promptLength} characters. Generate alternatives around the same length (50-120 characters). Match the original length roughly.`;
-    } else {
-      // Long input - detailed copy (paragraphs, explanations)
-      lengthGuidance = `The user's input is ${promptLength} characters. Generate detailed alternatives (100-200 characters). Provide comprehensive variations.`;
-    }
+    // Calculate length ranges based on input
+    const minLength = promptLength; // Minimum = input length
+    const maxLength = Math.min(promptLength * 2, promptLength + 20); // Max = 2x input or +20 chars
+    
+    // ============================================
+    // TONE-SPECIFIC SYSTEM PROMPTS (3 TONES)
+    // ============================================
+    
+    let systemPrompt = '';
+    
+    if (tone === 'neutral') {
+      // ============================================
+      // SHORT & SIMPLE - STRICT LENGTH CONSTRAINTS
+      // ============================================
+      
+      let lengthGuidance = '';
+      
+      if (promptLength <= 20) {
+        lengthGuidance = `CRITICAL: Input is ${promptLength} characters. Generate ULTRA-SHORT alternatives (${minLength}-${Math.min(maxLength, 25)} characters MAXIMUM). Examples: button labels, tags, status. Keep it minimal.`;
+      } else if (promptLength <= 50) {
+        lengthGuidance = `Input is ${promptLength} characters. Generate SHORT alternatives (${minLength}-${maxLength} characters). Brief and punchy.`;
+      } else if (promptLength <= 100) {
+        lengthGuidance = `Input is ${promptLength} characters. Generate concise alternatives (${minLength}-${maxLength} characters).`;
+      } else {
+        lengthGuidance = `Input is ${promptLength} characters. Generate alternatives (${minLength}-${maxLength} characters).`;
+      }
 
-    // Build system prompt with tone descriptions
-    const toneDescriptions = {
-      'neutral': 'Neutral/Functional tone: Clear, invisible, and efficient.',
-      'empathetic': 'Empathetic tone: Supportive and understanding.',
-      'encouraging': 'Encouraging/Playful tone: Positive and motivating.',
-      'direct': 'Direct/Concise tone: Minimum character count.',
-      'Professional': 'Professional tone: Educational and clear.'
-    };
-
-    const systemPrompt = `Act as a Senior UX Writer. Provide 5 distinct copy variations in ${toneDescriptions[tone]}
+      systemPrompt = `Act as a UX Writer focused on BREVITY and CLARITY.
 
 ${lengthGuidance}
 
-UX Principles:
-- Clarity over Cleverness
-- Progressive Disclosure  
-- 6th-8th grade reading level
-- Action-Oriented
+Tone: Short & Simple
+- Use minimum words possible
+- Clear and direct
+- No embellishment
+- Functional and efficient
+- Get straight to the point
+- Examples: "Save", "Delete", "Confirm", "Done", "Cancel"
 
-IMPORTANT: Match the input length! If input is 15 characters, outputs should be 10-25 characters. If input is 100 characters, outputs should be 80-120 characters.
+STRICT REQUIREMENT: Output length must be between ${minLength}-${maxLength} characters. NO EXCEPTIONS.
 
 Output Format: JSON array only:
 ["option 1", "option 2", "option 3", "option 4", "option 5"]
 
-No preamble, no explanation.`;
+No preamble or explanation.`;
+
+    } else if (tone === 'empathetic') {
+      // ============================================
+      // EMPATHETIC - WARM & SUPPORTIVE
+      // ============================================
+      
+      systemPrompt = `Act as a UX Writer with an EMPATHETIC and SUPPORTIVE tone.
+
+Input length: ${promptLength} characters
+Target range: ${minLength}-${maxLength} characters (flexible guideline, can be slightly descriptive)
+
+Tone: Empathetic
+- Show understanding and care for the user
+- Acknowledge user feelings and situations
+- Supportive and reassuring language
+- Warm and human connection
+- "We're here to help" attitude
+- Use phrases like:
+  • "We understand..."
+  • "Sorry about that..."
+  • "Let's fix this together..."
+  • "We're here for you..."
+  • "Don't worry, we'll help..."
+
+Make the user feel heard and supported. You can be slightly more descriptive to convey empathy and warmth, but stay within reasonable length (${minLength}-${maxLength} chars as guideline, can go up to ${maxLength + 10} if needed for warmth).
+
+Output Format: JSON array only:
+["option 1", "option 2", "option 3", "option 4", "option 5"]
+
+No preamble or explanation.`;
+
+    } else if (tone === 'encouraging') {
+      // ============================================
+      // ENCOURAGING - POSITIVE & MOTIVATING
+      // ============================================
+      
+      systemPrompt = `Act as a UX Writer with an ENCOURAGING and MOTIVATING tone.
+
+Input length: ${promptLength} characters
+Target range: ${minLength}-${maxLength} characters (flexible guideline, can be expressive)
+
+Tone: Encouraging
+- Positive and uplifting energy
+- Motivational and energizing language
+- Action-oriented and forward-looking
+- Celebrate progress and success
+- Enthusiastic but professional
+- Use phrases like:
+  • "Great job!"
+  • "You're all set!"
+  • "Let's go!"
+  • "Almost there!"
+  • "Nice work!"
+  • "You did it!"
+  • "Perfect!"
+
+Make the user feel good about their action and motivated to continue. You can be more expressive and positive, using ${minLength}-${maxLength} characters as a guideline (can go up to ${maxLength + 10} for expressiveness).
+
+Output Format: JSON array only:
+["option 1", "option 2", "option 3", "option 4", "option 5"]
+
+No preamble or explanation.`;
+
+    } else {
+      // Fallback to neutral if invalid tone provided
+      systemPrompt = `Act as a UX Writer.
+
+Input length: ${promptLength} characters
+Target: ${minLength}-${maxLength} characters
+
+Generate 5 clear, concise variations.
+
+Output Format: JSON array only:
+["option 1", "option 2", "option 3", "option 4", "option 5"]`;
+    }
 
     // ============================================
     // FEW-SHOT LEARNING FOR MICRO-COPY
     // ============================================
     
-    // Build messages array with examples for very short inputs
     const messages = [
       { role: 'system', content: systemPrompt }
     ];
 
-    // Add few-shot examples for micro-copy (<=20 chars) to guide the model
+    // Add tone-specific examples for micro-copy (<=20 chars)
     if (promptLength <= 20) {
-      messages.push(
-        { role: 'user', content: 'User Scenario: Save' },
-        { role: 'assistant', content: '["Save", "Save changes", "Save now", "Keep changes", "Confirm"]' },
-        { role: 'user', content: 'User Scenario: Delete account' },
-        { role: 'assistant', content: '["Delete account", "Remove account", "Close account", "Delete profile", "Cancel account"]' }
-      );
+      if (tone === 'neutral') {
+        // Short & Simple examples - minimal and functional
+        messages.push(
+          { role: 'user', content: 'User Scenario: Save' },
+          { role: 'assistant', content: '["Save", "Save changes", "Keep", "Confirm", "Apply"]' },
+          { role: 'user', content: 'User Scenario: Delete account' },
+          { role: 'assistant', content: '["Delete account", "Remove account", "Close account", "Delete", "Remove"]' }
+        );
+      } else if (tone === 'empathetic') {
+        // Empathetic examples - warm and understanding
+        messages.push(
+          { role: 'user', content: 'User Scenario: Error' },
+          { role: 'assistant', content: '["Sorry, try again", "Oops, let\'s retry", "Something went wrong", "We\'re sorry", "Let\'s fix this"]' },
+          { role: 'user', content: 'User Scenario: Delete' },
+          { role: 'assistant', content: '["We\'ll delete this", "Remove safely", "Delete confirmed", "Removing for you", "We\'ll take care of it"]' }
+        );
+      } else if (tone === 'encouraging') {
+        // Encouraging examples - positive and motivating
+        messages.push(
+          { role: 'user', content: 'User Scenario: Done' },
+          { role: 'assistant', content: '["All done!", "Great work!", "Success!", "You did it!", "Complete!"]' },
+          { role: 'user', content: 'User Scenario: Submit' },
+          { role: 'assistant', content: '["Let\'s go!", "Send it!", "You\'re ready!", "Submit now!", "Perfect!"]' }
+        );
+      }
     }
 
     // Add user's actual prompt
@@ -102,6 +199,20 @@ No preamble, no explanation.`;
     // ============================================
     // CALL GROQ API
     // ============================================
+    
+    // Adjust parameters based on tone
+    let maxTokens = 1024;
+    let temperature = 0.7;
+    
+    if (tone === 'neutral') {
+      // Short & Simple needs fewer tokens and lower temperature for consistency
+      maxTokens = promptLength <= 20 ? 100 : 500;
+      temperature = 0.5;
+    } else {
+      // Empathetic and Encouraging can be more creative
+      maxTokens = promptLength <= 20 ? 150 : 800;
+      temperature = 0.7;
+    }
     
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -112,8 +223,8 @@ No preamble, no explanation.`;
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
         messages: messages,
-        temperature: 0.7,
-        max_tokens: promptLength <= 20 ? 150 : 1024  // Token limiting for efficiency
+        temperature: temperature,
+        max_tokens: maxTokens
       })
     });
 
@@ -139,26 +250,35 @@ No preamble, no explanation.`;
     }
 
     // ============================================
-    // POST-PROCESSING: FILTER TOO-LONG OPTIONS
+    // POST-PROCESSING: LENGTH FILTERING
     // ============================================
     
-    if (promptLength <= 20) {
-      // For micro-copy, reject options longer than 3x the input
-      const maxLength = Math.max(30, promptLength * 3);
-      const filteredOptions = options.filter(opt => opt.length <= maxLength);
+    if (tone === 'neutral') {
+      // STRICT filtering for Short & Simple
+      const filteredOptions = options.filter(opt => 
+        opt.length >= minLength && opt.length <= maxLength
+      );
       
-      // If we filtered too many, use originals but log warning
       if (filteredOptions.length >= 3) {
         options = filteredOptions;
-        console.log(`✂️ Filtered ${options.length - filteredOptions.length} options that were too long`);
-      } else {
-        console.log(`⚠️ Not enough short options, keeping all results`);
+        console.log(`✂️ Strict filter: Kept ${filteredOptions.length} options within ${minLength}-${maxLength} chars`);
+      }
+    } else {
+      // FLEXIBLE filtering for Empathetic and Encouraging
+      const flexibleMax = maxLength + 10; // Allow 10 extra chars for expressiveness
+      const filteredOptions = options.filter(opt => 
+        opt.length >= minLength && opt.length <= flexibleMax
+      );
+      
+      if (filteredOptions.length >= 3) {
+        options = filteredOptions;
+        console.log(`✂️ Flexible filter: Kept ${filteredOptions.length} options within ${minLength}-${flexibleMax} chars`);
       }
     }
 
-    // Ensure we have at least 5 options (pad if needed)
+    // Ensure we have at least 5 options
     while (options.length < 5 && options.length > 0) {
-      options.push(options[0]); // Duplicate first option if needed
+      options.push(options[0]);
     }
 
     // Fallback if completely empty
@@ -171,20 +291,22 @@ No preamble, no explanation.`;
     // RETURN RESULTS WITH METADATA
     // ============================================
     
-    const finalOptions = options.slice(0, 5); // Ensure exactly 5 options
+    const finalOptions = options.slice(0, 5);
     const outputLengths = finalOptions.map(opt => opt.length);
     const avgOutputLength = Math.round(outputLengths.reduce((sum, len) => sum + len, 0) / outputLengths.length);
 
-    // Log performance metrics
-    console.log(`📊 Input: ${promptLength} chars | Avg Output: ${avgOutputLength} chars | Ratio: ${(avgOutputLength / promptLength).toFixed(2)}x`);
+    // Log performance metrics with tone info
+    console.log(`📊 [${tone.toUpperCase()}] Input: ${promptLength} chars | Avg Output: ${avgOutputLength} chars | Range: ${minLength}-${maxLength} | Ratio: ${(avgOutputLength / promptLength).toFixed(2)}x`);
 
     res.status(200).json({ 
       success: true, 
       options: finalOptions,
       metadata: {
+        tone: tone,
         inputLength: promptLength,
         outputLengths: outputLengths,
         averageOutputLength: avgOutputLength,
+        targetRange: `${minLength}-${maxLength}`,
         lengthRatio: parseFloat((avgOutputLength / promptLength).toFixed(2))
       }
     });
