@@ -31,189 +31,144 @@ export default async function handler(req, res) {
 
     // ============================================
     // LENGTH CALCULATION
+    // Per spec:
+    //   < 15 chars  → stay within +/- 3 chars
+    //   >= 15 chars → max 1.2x original length
     // ============================================
-    
+
     const promptLength = prompt.length;
-    
-    // Calculate length ranges based on input
-    const minLength = 4;
-    const maxLength = promptLength + 20;
-    
-    // ============================================
-    // TONE-SPECIFIC SYSTEM PROMPTS (3 TONES)
-    // ============================================
-    
-    let systemPrompt = '';
-    
-    if (tone === 'neutral') {
-      // ============================================
-      // SHORT & SIMPLE - STRICT LENGTH CONSTRAINTS
-      // ============================================
-      
-      let lengthGuidance = '';
-      
-      if (promptLength <= 20) {
-        lengthGuidance = `CRITICAL: Input is ${promptLength} characters. Generate ULTRA-SHORT alternatives (${minLength}-${Math.min(maxLength, 25)} characters MAXIMUM). Examples: button labels, tags, status. Keep it minimal.`;
-      } else if (promptLength <= 50) {
-        lengthGuidance = `Input is ${promptLength} characters. Generate SHORT alternatives (${minLength}-${maxLength} characters). Brief and punchy.`;
-      } else if (promptLength <= 100) {
-        lengthGuidance = `Input is ${promptLength} characters. Generate concise alternatives (${minLength}-${maxLength} characters).`;
-      } else {
-        lengthGuidance = `Input is ${promptLength} characters. Generate alternatives (${minLength}-${maxLength} characters).`;
-      }
 
-      systemPrompt = `Act as a UX Writer focused on BREVITY and CLARITY.
+    let minLength, maxLength;
 
-${lengthGuidance}
-
-Tone: Short & Simple
-- Use minimum words possible
-- Clear and direct
-- No embellishment
-- Functional and efficient
-- Get straight to the point
-- Examples: "Save", "Delete", "Confirm", "Done", "Cancel"
-
-STRICT REQUIREMENT: Output length must be between ${minLength}-${maxLength} characters. NO EXCEPTIONS.
-
-Output Format: JSON array only:
-["option 1", "option 2", "option 3", "option 4", "option 5"]
-
-No preamble or explanation.`;
-
-    } else if (tone === 'empathetic') {
-      // ============================================
-      // EMPATHETIC - WARM & SUPPORTIVE
-      // ============================================
-      
-      systemPrompt = `Act as a UX Writer with an EMPATHETIC and SUPPORTIVE tone.
-
-Input length: ${promptLength} characters
-Target range: ${minLength}-${maxLength} characters (flexible guideline, can be slightly descriptive)
-
-Tone: Empathetic
-- Show understanding and care for the user
-- Acknowledge user feelings and situations
-- Supportive and reassuring language
-- Warm and human connection
-- "We're here to help" attitude
-- Use phrases like:
-  • "We understand..."
-  • "Sorry about that..."
-  • "Let's fix this together..."
-  • "We're here for you..."
-  • "Don't worry, we'll help..."
-
-Make the user feel heard and supported. You can be slightly more descriptive to convey empathy and warmth, but stay within reasonable length (${minLength}-${maxLength} chars as guideline, can go up to ${maxLength + 10} if needed for warmth).
-
-Output Format: JSON array only:
-["option 1", "option 2", "option 3", "option 4", "option 5"]
-
-No preamble or explanation.`;
-
-    } else if (tone === 'encouraging') {
-      // ============================================
-      // ENCOURAGING - POSITIVE & MOTIVATING
-      // ============================================
-      
-      systemPrompt = `Act as a UX Writer with an ENCOURAGING and MOTIVATING tone.
-
-Input length: ${promptLength} characters
-Target range: ${minLength}-${maxLength} characters (flexible guideline, can be expressive)
-
-Tone: Encouraging
-- Positive and uplifting energy
-- Motivational and energizing language
-- Action-oriented and forward-looking
-- Celebrate progress and success
-- Enthusiastic but professional
-- Use phrases like:
-  • "Great job!"
-  • "You're all set!"
-  • "Let's go!"
-  • "Almost there!"
-  • "Nice work!"
-  • "You did it!"
-  • "Perfect!"
-
-Make the user feel good about their action and motivated to continue. You can be more expressive and positive, using ${minLength}-${maxLength} characters as a guideline (can go up to ${maxLength + 10} for expressiveness).
-
-Output Format: JSON array only:
-["option 1", "option 2", "option 3", "option 4", "option 5"]
-
-No preamble or explanation.`;
-
+    if (promptLength < 15) {
+      minLength = Math.max(1, promptLength - 3);
+      maxLength = promptLength + 3;
     } else {
-      // Fallback to neutral if invalid tone provided
-      systemPrompt = `Act as a UX Writer.
-
-Input length: ${promptLength} characters
-Target: ${minLength}-${maxLength} characters
-
-Generate 5 clear, concise variations.
-
-Output Format: JSON array only:
-["option 1", "option 2", "option 3", "option 4", "option 5"]`;
+      minLength = Math.max(4, Math.round(promptLength * 0.8)); // soft floor at 80%
+      maxLength = Math.round(promptLength * 1.2);
     }
 
     // ============================================
-    // FEW-SHOT LEARNING FOR MICRO-COPY
+    // TONE DEFINITIONS
     // ============================================
-    
+
+    const toneDefinitions = {
+      neutral: {
+        label: 'Simple (Neutral)',
+        description: 'Functional, direct, and minimalist.',
+        example: '"You need to fill out the form to proceed." → "Complete form to continue."',
+        instructions: [
+          'Use the fewest words possible',
+          'Remove filler words and fluff',
+          'Action-oriented and direct',
+          'No warmth or personality needed — pure function',
+        ]
+      },
+      empathetic: {
+        label: 'Empathetic',
+        description: 'Supportive and human. Recognizes the user\'s effort or potential frustration.',
+        example: '"Invalid password." → "That password isn\'t quite right. Try again?"',
+        instructions: [
+          'Acknowledge the user\'s situation or feeling',
+          'Use warm, human language',
+          'Avoid blame — make it feel safe',
+          'Supportive and reassuring tone',
+        ]
+      },
+      encouraging: {
+        label: 'Encouraging',
+        description: 'Positive and motivating. Focuses on progress and successful outcomes.',
+        example: '"Profile 50% complete." → "You\'re halfway there! Add a photo to stand out."',
+        instructions: [
+          'Focus on progress and what\'s possible',
+          'Celebrate small wins',
+          'Energetic and forward-looking',
+          'Make the user feel capable and motivated',
+        ]
+      }
+    };
+
+    const toneConfig = toneDefinitions[tone] || toneDefinitions['neutral'];
+
+    // ============================================
+    // SYSTEM PROMPT — ROLE + RULES
+    // ============================================
+
+    const systemPrompt = `You are a specialized UX Writer for a Figma plugin. Your task is to rewrite UI copy in a specific tone while respecting spatial constraints.
+
+### Your Role
+Rewrite UI copy to match the requested tone, keeping it within the allowed character range.
+
+### Tone: ${toneConfig.label}
+${toneConfig.description}
+Example: ${toneConfig.example}
+
+Writing Instructions:
+${toneConfig.instructions.map(i => `- ${i}`).join('\n')}
+
+### Length Constraint (CRITICAL)
+- Original text is ${promptLength} characters
+- You MUST generate options between ${minLength} and ${maxLength} characters
+- This is a hard limit — do NOT exceed ${maxLength} characters
+- Do NOT go below ${minLength} characters
+
+### Output Format
+Return a JSON array of exactly 5 options. No quotes around the array, no explanation, no preamble.
+["option 1", "option 2", "option 3", "option 4", "option 5"]`;
+
+    // ============================================
+    // FEW-SHOT EXAMPLES
+    // ============================================
+
     const messages = [
       { role: 'system', content: systemPrompt }
     ];
 
-    // Add tone-specific examples for micro-copy (<=20 chars)
-    if (promptLength <= 20) {
-      if (tone === 'neutral') {
-        // Short & Simple examples - minimal and functional
-        messages.push(
-          { role: 'user', content: 'User Scenario: Save' },
-          { role: 'assistant', content: '["Save", "Save changes", "Keep", "Confirm", "Apply"]' },
-          { role: 'user', content: 'User Scenario: Delete account' },
-          { role: 'assistant', content: '["Delete account", "Remove account", "Close account", "Delete", "Remove"]' }
-        );
-      } else if (tone === 'empathetic') {
-        // Empathetic examples - warm and understanding
-        messages.push(
-          { role: 'user', content: 'User Scenario: Error' },
-          { role: 'assistant', content: '["Sorry, try again", "Oops, let\'s retry", "Something went wrong", "We\'re sorry", "Let\'s fix this"]' },
-          { role: 'user', content: 'User Scenario: Delete' },
-          { role: 'assistant', content: '["We\'ll delete this", "Remove safely", "Delete confirmed", "Removing for you", "We\'ll take care of it"]' }
-        );
-      } else if (tone === 'encouraging') {
-        // Encouraging examples - positive and motivating
-        messages.push(
-          { role: 'user', content: 'User Scenario: Done' },
-          { role: 'assistant', content: '["All done!", "Great work!", "Success!", "You did it!", "Complete!"]' },
-          { role: 'user', content: 'User Scenario: Submit' },
-          { role: 'assistant', content: '["Let\'s go!", "Send it!", "You\'re ready!", "Submit now!", "Perfect!"]' }
-        );
-      }
+    // Tone-specific few-shot examples
+    if (tone === 'neutral') {
+      messages.push(
+        { role: 'user', content: 'Rewrite: "You need to fill out the form to proceed."' },
+        { role: 'assistant', content: '["Complete form to continue.", "Fill in the form first.", "Form required to proceed.", "Please complete the form.", "Finish the form to go on."]' },
+        { role: 'user', content: 'Rewrite: "Save"' },
+        { role: 'assistant', content: '["Save", "Keep", "Apply", "Confirm", "Done"]' }
+      );
+    } else if (tone === 'empathetic') {
+      messages.push(
+        { role: 'user', content: 'Rewrite: "Invalid password."' },
+        { role: 'assistant', content: '["That password isn\'t quite right. Try again?", "Hmm, that didn\'t match. Give it another go?", "Password didn\'t work — no worries, try again.", "Not quite — double-check and retry.", "That one didn\'t work. Want to try again?"]' },
+        { role: 'user', content: 'Rewrite: "Error"' },
+        { role: 'assistant', content: '["Oops", "Sorry!", "Uh oh", "My bad", "Whoops"]' }
+      );
+    } else if (tone === 'encouraging') {
+      messages.push(
+        { role: 'user', content: 'Rewrite: "Profile 50% complete."' },
+        { role: 'assistant', content: '["You\'re halfway there! Add a photo to stand out.", "Great start! Keep going to finish your profile.", "50% done — you\'re on a roll!", "Almost halfway! A few more steps to shine.", "Nice progress! Let\'s keep the momentum going."]' },
+        { role: 'user', content: 'Rewrite: "Submit"' },
+        { role: 'assistant', content: '["Let\'s go!", "Send it!", "You\'re ready!", "Go for it!", "Do it!"]' }
+      );
     }
 
-    // Add user's actual prompt
-    messages.push({ role: 'user', content: `User Scenario: ${prompt}` });
+    // Add the actual user prompt
+    messages.push({
+      role: 'user',
+      content: `Rewrite: "${prompt}"`
+    });
 
     // ============================================
     // CALL GROQ API
     // ============================================
-    
-    // Adjust parameters based on tone
-    let maxTokens = 1024;
+
+    let maxTokens = 800;
     let temperature = 0.7;
-    
+
     if (tone === 'neutral') {
-      // Short & Simple needs fewer tokens and lower temperature for consistency
-      maxTokens = promptLength <= 20 ? 100 : 500;
-      temperature = 0.5;
+      temperature = 0.5; // More predictable for functional copy
+      maxTokens = promptLength < 15 ? 100 : 400;
     } else {
-      // Empathetic and Encouraging can be more creative
-      maxTokens = promptLength <= 20 ? 150 : 800;
-      temperature = 0.7;
+      temperature = 0.75; // Slightly more creative for empathetic/encouraging
+      maxTokens = promptLength < 15 ? 150 : 600;
     }
-    
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -230,7 +185,7 @@ Output Format: JSON array only:
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('❌ Groq API error:', error);
+      console.error('Groq API error:', error);
       throw new Error(error.error?.message || 'API request failed');
     }
 
@@ -240,7 +195,7 @@ Output Format: JSON array only:
     // ============================================
     // PARSE RESPONSE
     // ============================================
-    
+
     let options;
     try {
       const jsonMatch = content.match(/\[[\s\S]*\]/);
@@ -252,54 +207,42 @@ Output Format: JSON array only:
     // ============================================
     // POST-PROCESSING: LENGTH FILTERING
     // ============================================
-    
-    if (tone === 'neutral') {
-      // STRICT filtering for Short & Simple
-      const filteredOptions = options.filter(opt => 
-        opt.length >= minLength && opt.length <= maxLength
-      );
-      
-      if (filteredOptions.length >= 3) {
-        options = filteredOptions;
-        console.log(`✂️ Strict filter: Kept ${filteredOptions.length} options within ${minLength}-${maxLength} chars`);
-      }
-    } else {
-      // FLEXIBLE filtering for Empathetic and Encouraging
-      const flexibleMax = maxLength + 10; // Allow 10 extra chars for expressiveness
-      const filteredOptions = options.filter(opt => 
-        opt.length >= minLength && opt.length <= flexibleMax
-      );
-      
-      if (filteredOptions.length >= 3) {
-        options = filteredOptions;
-        console.log(`✂️ Flexible filter: Kept ${filteredOptions.length} options within ${minLength}-${flexibleMax} chars`);
-      }
+
+    const filteredOptions = options.filter(opt =>
+      typeof opt === 'string' &&
+      opt.length >= minLength &&
+      opt.length <= maxLength
+    );
+
+    // Use filtered if we have enough, otherwise keep all (don't starve the user)
+    if (filteredOptions.length >= 3) {
+      options = filteredOptions;
     }
 
-    // Ensure we have at least 5 options
+    // Pad to 5 if needed
     while (options.length < 5 && options.length > 0) {
       options.push(options[0]);
     }
 
-    // Fallback if completely empty
+    // Fallback
     if (options.length === 0) {
       options = [prompt, prompt, prompt, prompt, prompt];
-      console.log(`⚠️ No valid options generated, using input as fallback`);
     }
 
     // ============================================
-    // RETURN RESULTS WITH METADATA
+    // RETURN RESULTS
     // ============================================
-    
+
     const finalOptions = options.slice(0, 5);
     const outputLengths = finalOptions.map(opt => opt.length);
-    const avgOutputLength = Math.round(outputLengths.reduce((sum, len) => sum + len, 0) / outputLengths.length);
+    const avgOutputLength = Math.round(
+      outputLengths.reduce((sum, len) => sum + len, 0) / outputLengths.length
+    );
 
-    // Log performance metrics with tone info
-    console.log(`📊 [${tone.toUpperCase()}] Input: ${promptLength} chars | Avg Output: ${avgOutputLength} chars | Range: ${minLength}-${maxLength} | Ratio: ${(avgOutputLength / promptLength).toFixed(2)}x`);
+    console.log(`[${tone.toUpperCase()}] Input: ${promptLength} chars | Avg Output: ${avgOutputLength} chars | Range: ${minLength}-${maxLength}`);
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       options: finalOptions,
       metadata: {
         tone: tone,
@@ -312,9 +255,9 @@ Output Format: JSON array only:
     });
 
   } catch (error) {
-    console.error('❌ Error:', error);
-    res.status(500).json({ 
-      error: error.message || 'Failed to generate copy' 
+    console.error('Error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to generate copy'
     });
   }
 }
