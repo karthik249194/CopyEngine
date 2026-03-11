@@ -164,6 +164,36 @@
       position: relative;
     }
 
+    /* Custom Rules Section */
+    .custom-rules-wrapper {
+      margin-bottom: 10px;
+    }
+
+    #customRulesInput {
+      width: 100%;
+      min-height: 50px;
+      max-height: 80px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      background: var(--input-bg);
+      border: 1px solid var(--border-secondary);
+      border-radius: 6px;
+      resize: none;
+      color: var(--text-primary);
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    #customRulesInput:focus {
+      border-color: #0066ff;
+    }
+
+    #customRulesInput::placeholder {
+      color: var(--text-muted);
+      opacity: 1;
+    }
+
     textarea {
       width: 100%;
       min-height: 50px;
@@ -416,7 +446,7 @@
 <body>
   <!-- Header -->
   <div class="header">
-    <h1>CopyEngine</h1>
+    <h1>UX Copywriter</h1>
     <div class="header-actions">
       <button class="theme-toggle" id="themeToggle" title="Toggle theme">
         <svg class="sun-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -430,6 +460,9 @@
   <div class="content">
     <!-- Input section -->
     <div class="input-section">
+      <div class="custom-rules-wrapper">
+        <textarea id="customRulesInput" placeholder="Add custom rules (e.g., 'Always use active voice', 'Avoid technical jargon', 'Keep under 50 characters')..."></textarea>
+      </div>
       <div class="input-wrapper">
         <textarea id="promptInput" placeholder="Enter a scenario (e.g., 'Error message for failed payment')..." autofocus></textarea>
       </div>
@@ -469,6 +502,7 @@
 
     // DOM elements
     const themeToggle = document.getElementById('themeToggle');
+    const customRulesInput = document.getElementById('customRulesInput');
     const promptInput = document.getElementById('promptInput');
     const generateBtn = document.getElementById('generateBtn');
     const resultsSection = document.getElementById('resultsSection');
@@ -534,6 +568,9 @@
         console.log('Calling backend API...');
         console.log('Prompt:', userPrompt);
         console.log('Tone:', selectedTone);
+        
+        const customRules = customRulesInput.value.trim();
+        console.log('Custom Rules:', customRules || 'None');
 
         // Call YOUR backend - no API key needed!
         const response = await fetch(BACKEND_URL, {
@@ -543,7 +580,8 @@
           },
           body: JSON.stringify({
             prompt: userPrompt,
-            tone: selectedTone
+            tone: selectedTone,
+            customRules: customRules || null
           })
         });
 

@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prompt, tone } = req.body;
+    const { prompt, tone, customRules } = req.body;
 
     // Validate input
     if (!prompt || !tone) {
@@ -94,8 +94,21 @@ export default async function handler(req, res) {
     // SYSTEM PROMPT — ROLE + RULES
     // ============================================
 
-    const systemPrompt = `You are a specialized UX Writer for a Figma plugin. Your task is to REWRITE the given UI copy in a specific tone while respecting spatial layout constraints.
+    // Build custom rules section if provided
+    let customRulesSection = '';
+    if (customRules && customRules.trim().length > 0) {
+      customRulesSection = `
 
+### CUSTOM RULES (HIGHEST PRIORITY)
+The user has provided specific custom rules that MUST be followed:
+${customRules}
+
+These custom rules override default instructions where they conflict. Apply these rules to ALL generated options.
+`;
+    }
+
+    const systemPrompt = `You are a specialized UX Writer for a Figma plugin. Your task is to REWRITE the given UI copy in a specific tone while respecting spatial layout constraints.
+${customRulesSection}
 ### IMPORTANT: What "Rewrite" Means
 You must preserve the MEANING and CONTEXT of the original text, but change the tone and phrasing.
 - DO: Rephrase the same message in a different tone
@@ -259,7 +272,7 @@ Return a JSON array of exactly 5 options. No explanation, no preamble.
       outputLengths.reduce((sum, len) => sum + len, 0) / outputLengths.length
     );
 
-    console.log(`[${tone.toUpperCase()}] Input: ${promptLength} chars | Avg Output: ${avgOutputLength} chars | Range: ${minLength}-${maxLength}`);
+    console.log(`[${tone.toUpperCase()}] Input: ${promptLength} chars | Avg Output: ${avgOutputLength} chars | Range: ${minLength}-${maxLength}${customRules ? ' | Custom Rules: YES' : ''}`);
 
     res.status(200).json({
       success: true,
@@ -270,7 +283,8 @@ Return a JSON array of exactly 5 options. No explanation, no preamble.
         outputLengths: outputLengths,
         averageOutputLength: avgOutputLength,
         targetRange: `${minLength}-${maxLength}`,
-        lengthRatio: parseFloat((avgOutputLength / promptLength).toFixed(2))
+        lengthRatio: parseFloat((avgOutputLength / promptLength).toFixed(2)),
+        hasCustomRules: !!customRules
       }
     });
 
