@@ -96,15 +96,24 @@ export default async function handler(req, res) {
 
     // Build custom rules section if provided
     let customRulesSection = '';
+    let lengthConstraintNote = '';
+    
     if (customRules && customRules.trim().length > 0) {
       customRulesSection = `
 
-### CUSTOM RULES (HIGHEST PRIORITY)
-The user has provided specific custom rules that MUST be followed:
+### 🔴 CUSTOM RULES — ABSOLUTE PRIORITY — MUST FOLLOW
+The user has provided MANDATORY custom rules. These rules are NON-NEGOTIABLE and take precedence over ALL other instructions below:
+
 ${customRules}
 
-These custom rules override default instructions where they conflict. Apply these rules to ALL generated options.
+⚠️ CRITICAL: Apply these custom rules to EVERY generated option. If custom rules conflict with length constraints or tone instructions, THE CUSTOM RULES WIN. Do not skip or ignore any custom rule.
 `;
+      
+      // If custom rules mention length/character limits, note that they override default constraints
+      const hasLengthRule = /\d+\s*(char|character|word)/i.test(customRules) || /under|below|max|limit/i.test(customRules);
+      if (hasLengthRule) {
+        lengthConstraintNote = '\n⚠️ Note: User has specified custom length requirements above. Those take precedence over the default length constraints below.';
+      }
     }
 
     const systemPrompt = `You are a specialized UX Writer for a Figma plugin. Your task is to REWRITE the given UI copy in a specific tone while respecting spatial layout constraints.
@@ -137,7 +146,7 @@ ${toneConfig.instructions.map(i => `- ${i}`).join('\n')}
 - Original text is ${promptLength} characters
 - You MUST generate options between ${minLength} and ${maxLength} characters
 - Each option MUST be at least ${minLength} characters — short exclamations are NOT acceptable for longer inputs
-- Do NOT exceed ${maxLength} characters
+- Do NOT exceed ${maxLength} characters${lengthConstraintNote}
 
 ### Output Format
 Return a JSON array of exactly 5 options. No explanation, no preamble.
@@ -241,15 +250,23 @@ Return a JSON array of exactly 5 options. No explanation, no preamble.
     // POST-PROCESSING: LENGTH FILTERING
     // ============================================
 
-    const filteredOptions = options.filter(opt =>
-      typeof opt === 'string' &&
-      opt.length >= minLength &&
-      opt.length <= maxLength
-    );
+    // If custom rules are provided, skip automatic length filtering
+    // Trust that the AI followed the custom rules which take precedence
+    if (!customRules || customRules.trim().length === 0) {
+      const filteredOptions = options.filter(opt =>
+        typeof opt === 'string' &&
+        opt.length >= minLength &&
+        opt.length <= maxLength
+      );
 
-    // Use filtered if we have enough, otherwise keep all (don't starve the user)
-    if (filteredOptions.length >= 3) {
-      options = filteredOptions;
+      // Use filtered if we have enough, otherwise keep all (don't starve the user)
+      if (filteredOptions.length >= 3) {
+        options = filteredOptions;
+      }
+    } else {
+      // With custom rules, only filter out non-strings
+      options = options.filter(opt => typeof opt === 'string');
+      console.log('⚠️ Custom rules present - skipping automatic length filtering');
     }
 
     // Pad to 5 if needed
