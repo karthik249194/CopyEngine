@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CopyEngine — UX Copy, Instantly</title>
+<title>UX Copywriter — UX Copy, Instantly</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23ff7940'/><text x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='Google Sans,sans-serif' font-weight='700' font-size='13' fill='white'>UX</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,wght@0,400;0,500;0,700;1,400;1,700&family=Google+Sans+Display:ital,wght@0,400;0,700;1,400;1,700&family=Google+Sans+Mono&display=swap" rel="stylesheet">
@@ -86,13 +87,21 @@ nav {
 .hero-wrap::before {
   content: '';
   position: absolute; inset: 0;
-  background: radial-gradient(ellipse 55% 45% at 72% 50%, rgba(255,121,64,0.07) 0%, transparent 68%);
+  background:
+    radial-gradient(ellipse 55% 45% at 72% 50%, rgba(255,121,64,0.08) 0%, transparent 68%),
+    linear-gradient(rgba(255,121,64,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,121,64,0.025) 1px, transparent 1px);
+  background-size: 100% 100%, 44px 44px, 44px 44px;
   pointer-events: none;
 }
 .hero-inner {
   max-width: var(--max); margin: 0 auto; padding: 0 40px;
   display: grid; grid-template-columns: 1fr 1fr;
   gap: 56px; align-items: center; width: 100%;
+}
+.hero-left {
+  display: flex; flex-direction: column; align-items: flex-start;
+  position: relative;
 }
 .hero-badge {
   display: inline-flex; align-items: center; gap: 8px;
@@ -110,6 +119,14 @@ nav {
   animation: blink 2.2s infinite;
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+.cursor {
+  display: inline-block;
+  width: 6px; height: 12px;
+  background: var(--acc);
+  margin-left: 2px; vertical-align: middle;
+  animation: cur 1s step-end infinite;
+}
+@keyframes cur { 0%,100%{opacity:1} 50%{opacity:0} }
 h1 {
   font-family: var(--display);
   font-size: clamp(44px, 5.5vw, 72px);
@@ -117,8 +134,43 @@ h1 {
   letter-spacing: -0.03em; color: var(--text);
   margin-bottom: 22px;
   opacity: 0; animation: fadeUp 0.7s ease 0.2s forwards;
+  position: relative;
 }
-h1 em { font-style: italic; font-weight: 400; color: var(--acc); }
+h1 em { font-style: italic; font-weight: 400; color: var(--acc); display: inline-block; }
+/* GLITCH */
+h1.glitch::before, h1.glitch::after {
+  content: attr(data-text);
+  position: absolute; top: 0; left: 0; width: 100%;
+  font-family: var(--display); font-size: inherit;
+  font-weight: 700; line-height: 1.05; letter-spacing: -0.03em;
+  pointer-events: none; white-space: pre-wrap;
+}
+h1.glitch::before {
+  color: rgba(255,100,50,0.55);
+  animation: glitch1 4s infinite;
+  clip-path: polygon(0 15%, 100% 15%, 100% 38%, 0 38%);
+}
+h1.glitch::after {
+  color: rgba(80,210,255,0.3);
+  animation: glitch2 4s infinite;
+  clip-path: polygon(0 58%, 100% 58%, 100% 78%, 0 78%);
+}
+@keyframes glitch1 {
+  0%,88%,100%{ transform:translate(0); opacity:0; }
+  89%{ transform:translate(-4px,1px); opacity:1; }
+  91%{ transform:translate(4px,-1px); opacity:1; }
+  93%{ transform:translate(-2px,0); opacity:1; }
+  95%{ transform:translate(0); opacity:0; }
+}
+@keyframes glitch2 {
+  0%,88%,100%{ transform:translate(0); opacity:0; }
+  89%{ transform:translate(4px,-1px); opacity:1; }
+  91%{ transform:translate(-4px,1px); opacity:1; }
+  93%{ transform:translate(2px,0); opacity:1; }
+  95%{ transform:translate(0); opacity:0; }
+}
+
+
 .hero-sub {
   font-size: 17px; font-weight: 400;
   color: var(--text2); line-height: 1.72;
@@ -493,7 +545,7 @@ footer {
     <div class="nav-mark">
       <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 8h10M8 3l5 5-5 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
-    CopyEngine
+    UX Copywriter
   </a>
   <ul class="nav-links">
     <li><a href="#how">How it works</a></li>
@@ -510,9 +562,9 @@ footer {
 <div class="hero-wrap">
   <div class="hero-inner">
     <div class="hero-left">
-      <div class="hero-badge"><span class="badge-dot"></span>Figma Plugin · Powered by Claude AI</div>
-      <h1>UX copy,<br><em>instantly</em><br>generated.</h1>
-      <p class="hero-sub">Stop Lorem-Ipsum-ing through mockups. Get 5 professional UX copy variations in seconds — without leaving Figma.</p>
+      <div class="hero-badge"><span class="badge-dot"></span><span id="badgeText">Figma Plugin · Powered by Claude AI</span><span class="cursor"></span></div>
+      <h1 id="heroH1" data-text="UX copy,&#10;instantly&#10;generated.">UX copy,<br><em>instantly</em><br>generated.</h1>
+      <p class="hero-sub" id="heroSub">Stop Lorem-Ipsum-ing through mockups. Get 5 professional UX copy variations in seconds — without leaving Figma.</p>
       <div class="hero-acts">
         <a href="https://www.figma.com/community/plugin/1602747951481753437" target="_blank" rel="noopener" class="btn-p">
           <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 002-2v-4M17 9l-5 5-5-5M12 12.8V2.5"/></svg>
@@ -523,6 +575,7 @@ footer {
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
       </div>
+
     </div>
     <div class="hero-right">
       <div class="demo">
@@ -584,7 +637,7 @@ footer {
         <span class="snum">01</span>
         <div class="sico"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h4"/></svg></div>
         <div class="stitle">Select a text layer</div>
-        <div class="sdesc">Click any text element. CopyEngine auto-loads existing content as context.</div>
+        <div class="sdesc">Click any text element. UX Copywriter auto-loads existing content as context.</div>
       </div>
       <div class="step">
         <span class="snum">02</span>
@@ -742,7 +795,7 @@ footer {
     <div>
       <a href="#" class="flogo">
         <div class="fmark"><svg width="14" height="14" fill="none" viewBox="0 0 16 16"><path d="M3 8h10M8 3l5 5-5 5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        CopyEngine
+        UX Copywriter
       </a>
       <div class="fnote">Powered by Claude AI + Groq · Built for Figma · v1.0.0</div>
     </div>
@@ -765,6 +818,88 @@ footer {
 const revs = document.querySelectorAll('.reveal');
 const obs = new IntersectionObserver(es => es.forEach(e => { if(e.isIntersecting) e.target.classList.add('in'); }), {threshold:0.08,rootMargin:'0px 0px -32px 0px'});
 revs.forEach(el => obs.observe(el));
+
+/* ── SCRAMBLE EFFECT ── */
+const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&<>/\\|{}[]';
+function scramble(el, finalText, duration) {
+  let start = null;
+  const frames = Math.round(duration / 16);
+  // collect text nodes only (skip <br> and <em>)
+  function getTextNodes(node) {
+    let nodes = [];
+    node.childNodes.forEach(n => {
+      if (n.nodeType === 3) nodes.push(n);
+      else if (n.tagName !== 'BR') nodes = nodes.concat(getTextNodes(n));
+    });
+    return nodes;
+  }
+  const textNodes = getTextNodes(el);
+  const originals = textNodes.map(n => n.textContent);
+
+  function step(ts) {
+    if (!start) start = ts;
+    const progress = Math.min((ts - start) / duration, 1);
+    textNodes.forEach((node, ni) => {
+      const orig = originals[ni];
+      let out = '';
+      for (let i = 0; i < orig.length; i++) {
+        if (orig[i] === ' ' || orig[i] === '\n') { out += orig[i]; continue; }
+        if (i < Math.floor(orig.length * progress)) {
+          out += orig[i];
+        } else {
+          out += CHARS[Math.floor(Math.random() * CHARS.length)];
+        }
+      }
+      node.textContent = out;
+    });
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* ── INIT on load ── */
+window.addEventListener('load', () => {
+  const h1 = document.getElementById('heroH1');
+  const sub = document.getElementById('heroSub');
+  const t1 = document.getElementById('t1');
+
+  // glitch class after animations settle
+  setTimeout(() => {
+    if (h1) h1.classList.add('glitch');
+  }, 1200);
+
+  // scramble h1 on load
+  setTimeout(() => {
+    if (h1) scramble(h1, h1.textContent, 900);
+  }, 300);
+
+  // scramble sub on load
+  setTimeout(() => {
+    if (sub) {
+      const orig = sub.textContent;
+      let start = null;
+      function stepSub(ts) {
+        if (!start) start = ts;
+        const p = Math.min((ts - start) / 700, 1);
+        let out = '';
+        for (let i = 0; i < orig.length; i++) {
+          if (orig[i] === ' ') { out += ' '; continue; }
+          if (i < Math.floor(orig.length * p)) out += orig[i];
+          else out += CHARS[Math.floor(Math.random() * CHARS.length)];
+        }
+        sub.textContent = out;
+        if (p < 1) requestAnimationFrame(stepSub);
+        else sub.textContent = orig;
+      }
+      requestAnimationFrame(stepSub);
+    }
+  }, 700);
+
+  // re-scramble h1 on hover
+  if (h1) {
+    h1.addEventListener('mouseenter', () => scramble(h1, h1.textContent, 500));
+  }
+});
 
 const nav = document.getElementById('nav');
 window.addEventListener('scroll', () => { nav.style.boxShadow = window.scrollY>20?'0 4px 32px rgba(0,0,0,0.45)':'none'; }, {passive:true});
