@@ -11,7 +11,6 @@
     }
 
     :root {
-      /* Light mode colors */
       --bg-primary: #ffffff;
       --bg-secondary: #f8f8f8;
       --bg-tertiary: #f5f5f5;
@@ -36,7 +35,6 @@
     }
 
     [data-theme="dark"] {
-      /* Dark mode colors */
       --bg-primary: #1a1a1a;
       --bg-secondary: #242424;
       --bg-tertiary: #2a2a2a;
@@ -71,7 +69,6 @@
       transition: background 0.3s, color 0.3s;
     }
 
-    /* Header */
     .header {
       display: flex;
       justify-content: space-between;
@@ -115,7 +112,6 @@
       height: 18px;
     }
 
-    /* Main content */
     .content {
       flex: 1;
       display: flex;
@@ -123,7 +119,6 @@
       overflow: hidden;
     }
 
-    /* Input section */
     .input-section {
       padding: 12px;
       border-bottom: 1px solid var(--border-primary);
@@ -164,7 +159,6 @@
       position: relative;
     }
 
-    /* Custom Rules Section */
     .custom-rules-wrapper {
       margin-bottom: 10px;
     }
@@ -241,29 +235,16 @@
       cursor: not-allowed;
     }
 
-    /* Results section */
     .results-section {
       flex: 1;
       overflow-y: auto;
       padding: 10px 12px 12px;
     }
 
-    .results-section::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .results-section::-webkit-scrollbar-track {
-      background: var(--scrollbar-track);
-    }
-
-    .results-section::-webkit-scrollbar-thumb {
-      background: var(--scrollbar-thumb);
-      border-radius: 3px;
-    }
-
-    .results-section::-webkit-scrollbar-thumb:hover {
-      background: var(--scrollbar-thumb-hover);
-    }
+    .results-section::-webkit-scrollbar { width: 6px; }
+    .results-section::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+    .results-section::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+    .results-section::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
     .empty-state {
       display: flex;
@@ -307,13 +288,9 @@
       margin-bottom: 10px;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .loading-state p {
-      font-size: 12px;
-    }
+    .loading-state p { font-size: 12px; }
 
     .result-card {
       background: var(--card-bg);
@@ -328,14 +305,8 @@
     }
 
     @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     .result-card:hover {
@@ -344,9 +315,7 @@
       transform: translateX(2px);
     }
 
-    .result-card:last-child {
-      margin-bottom: 0;
-    }
+    .result-card:last-child { margin-bottom: 0; }
 
     .result-text {
       font-size: 13px;
@@ -388,12 +357,8 @@
       border-color: #00aa00;
     }
 
-    .copy-btn svg {
-      width: 11px;
-      height: 11px;
-    }
+    .copy-btn svg { width: 11px; height: 11px; }
 
-    /* Toast notification */
     .toast {
       position: fixed;
       bottom: 16px;
@@ -410,11 +375,8 @@
       z-index: 1000;
     }
 
-    .toast.show {
-      opacity: 1;
-    }
+    .toast.show { opacity: 1; }
 
-    /* Error message */
     .error-message {
       background: #fff0f0;
       border: 1px solid #ffcccc;
@@ -430,21 +392,9 @@
       border-color: #5a2a2a;
       color: #ff6666;
     }
-
-    /* Error message */
-    .error-message {
-      background: #fff0f0;
-      border: 1px solid #ffcccc;
-      border-radius: 6px;
-      padding: 12px;
-      margin-bottom: 12px;
-      font-size: 12px;
-      color: #cc0000;
-    }
   </style>
 </head>
 <body>
-  <!-- Header -->
   <div class="header">
     <h1>UX Copywriter</h1>
     <div class="header-actions">
@@ -456,9 +406,7 @@
     </div>
   </div>
 
-  <!-- Main content -->
   <div class="content">
-    <!-- Input section -->
     <div class="input-section">
       <div class="custom-rules-wrapper">
         <textarea id="customRulesInput" placeholder="Add custom rules (e.g., 'Always use active voice', 'Avoid technical jargon', 'Keep under 50 characters')..."></textarea>
@@ -474,7 +422,6 @@
       <button class="generate-btn" id="generateBtn">Generate Copy</button>
     </div>
 
-    <!-- Results section -->
     <div class="results-section" id="resultsSection">
       <div class="empty-state">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -485,7 +432,6 @@
     </div>
   </div>
 
-  <!-- Toast notification -->
   <div class="toast" id="toast"></div>
 
   <script>
@@ -494,27 +440,25 @@
     let selectedTone = 'neutral';
     let hasGeneratedOnce = false;
     let lastPrompt = '';
-    
-    const BACKEND_URL = 'https://copy-engine-chi.vercel.app/api/generate';
 
     // Set dark mode as default
     document.documentElement.setAttribute('data-theme', 'dark');
 
     // DOM elements
-    const themeToggle = document.getElementById('themeToggle');
+    const themeToggle     = document.getElementById('themeToggle');
     const customRulesInput = document.getElementById('customRulesInput');
-    const promptInput = document.getElementById('promptInput');
-    const generateBtn = document.getElementById('generateBtn');
-    const resultsSection = document.getElementById('resultsSection');
-    const toast = document.getElementById('toast');
-    const toneChips = document.querySelectorAll('.tone-chip');
+    const promptInput     = document.getElementById('promptInput');
+    const generateBtn     = document.getElementById('generateBtn');
+    const resultsSection  = document.getElementById('resultsSection');
+    const toast           = document.getElementById('toast');
+    const toneChips       = document.querySelectorAll('.tone-chip');
 
     // Theme toggle
     themeToggle.addEventListener('click', () => {
-      const currentTheme = document.documentElement.getAttribute('data-theme');
-      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', newTheme);
-      showToast(`Switched to ${newTheme} mode`);
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      showToast(`Switched to ${next} mode`);
     });
 
     // Auto-resize textarea
@@ -529,8 +473,7 @@
         toneChips.forEach(c => c.classList.remove('active'));
         this.classList.add('active');
         selectedTone = this.dataset.tone;
-        
-        // Auto-regenerate if already generated once
+
         if (hasGeneratedOnce && lastPrompt) {
           generateCopy(lastPrompt);
         }
@@ -543,20 +486,17 @@
     // Generate button
     generateBtn.addEventListener('click', async () => {
       const prompt = promptInput.value.trim();
-      
       if (!prompt) {
         showToast('Please enter a scenario first');
         return;
       }
-
-      await generateCopy(prompt);
+      generateCopy(prompt);
     });
 
-    // Generate copy using backend proxy
-    async function generateCopy(userPrompt) {
+    // ── generateCopy — sends to code.js, which does the fetch ──────────────
+    function generateCopy(userPrompt) {
       generateBtn.disabled = true;
-      
-      // Show loading state
+
       resultsSection.innerHTML = `
         <div class="loading-state">
           <div class="spinner"></div>
@@ -564,99 +504,22 @@
         </div>
       `;
 
-      try {
-        console.log('Calling backend API...');
-        console.log('Prompt:', userPrompt);
-        console.log('Tone:', selectedTone);
-        
-        const customRules = customRulesInput.value.trim();
-        console.log('Custom Rules:', customRules || 'None');
+      const customRules = customRulesInput.value.trim();
 
-        // Call YOUR backend - no API key needed!
-        const response = await fetch(BACKEND_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            prompt: userPrompt,
-            tone: selectedTone,
-            customRules: customRules || null
-          })
-        });
-
-        console.log('Response status:', response.status);
-
-        if (!response.ok) {
-          throw new Error('Failed to generate copy. Please try again.');
+      // Route through code.js instead of fetching directly
+      parent.postMessage({
+        pluginMessage: {
+          type: 'generate-copy',
+          prompt: userPrompt,
+          tone: selectedTone,
+          customRules: customRules || null
         }
-
-        const data = await response.json();
-        console.log('API Response:', data);
-
-        if (!data.success || !data.options || data.options.length === 0) {
-          throw new Error('No valid options generated');
-        }
-
-        // Mark that we've successfully generated once and save the prompt
-        hasGeneratedOnce = true;
-        lastPrompt = userPrompt;
-
-        displayResults(data.options);
-
-      } catch (error) {
-        console.error('Error:', error);
-        const errorMsg = error.message || 'Unknown error occurred';
-        
-        // Simple error message for backend failures
-        resultsSection.innerHTML = `
-          <div class="error-message">
-            <strong>⚠️ Service Temporarily Unavailable</strong><br>
-            ${errorMsg}
-            <br><br>
-            <small>Please try again in a moment. If the problem persists, the service may be experiencing high load.</small>
-          </div>
-        `;
-        showToast('Failed to generate copy: ' + errorMsg);
-      } finally {
-        generateBtn.disabled = false;
-      }
+      }, '*');
     }
-
-    // Demo mode with sample data
-    window.useDemoMode = function() {
-      const demoData = {
-        'generic': [
-          "Unable to process your request. Please try again.",
-          "We couldn't complete that action. Don't worry—check your details and try again.",
-          "Oops! Something didn't work. Let's give it another shot!",
-          "Error occurred",
-          "The request could not be completed. Please verify your information and retry."
-        ],
-        'neutral': [
-          "Action could not be completed.",
-          "Unable to proceed with this action.",
-          "Request cannot be processed.",
-          "Error",
-          "This action is currently unavailable."
-        ],
-        'empathetic': [
-          "We understand this is frustrating. Let's try that again together.",
-          "Sorry about that! We're here to help. Please try once more.",
-          "We know this isn't ideal. Give it another try and we'll sort it out.",
-          "Apologies for the trouble. Try again?",
-          "We're sorry this happened. Let's work through this together."
-        ]
-      };
-
-      const selectedData = demoData[selectedTone] || demoData['generic'];
-      displayResults(selectedData);
-      showToast('✓ Using demo mode (sample data)');
-    };
 
     // Display results
     function displayResults(options) {
-      resultsSection.innerHTML = options.map((option, index) => {
+      resultsSection.innerHTML = options.map((option) => {
         const cleanOption = option.replace(/^["'\d\.\-\s]+/, '').replace(/["']$/, '').trim();
         return `
           <div class="result-card" data-text="${cleanOption.replace(/"/g, '&quot;')}" onclick="applyToFigma(this)">
@@ -684,7 +547,7 @@
     function copyToClipboard(btn) {
       const text = btn.dataset.text;
       navigator.clipboard.writeText(text);
-      
+
       const originalHTML = btn.innerHTML;
       btn.classList.add('copied');
       btn.innerHTML = `
@@ -693,12 +556,12 @@
         </svg>
         Copied!
       `;
-      
+
       setTimeout(() => {
         btn.classList.remove('copied');
         btn.innerHTML = originalHTML;
       }, 1500);
-      
+
       showToast('Copied to clipboard!');
     }
 
@@ -706,47 +569,68 @@
     function showToast(message) {
       toast.textContent = message;
       toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 2000);
+      setTimeout(() => toast.classList.remove('show'), 2000);
     }
 
-    // Listen for messages from plugin code
+    // ── Listen for messages from code.js ────────────────────────────────────
     window.onmessage = (event) => {
       const msg = event.data.pluginMessage;
       if (!msg) return;
-      
+
+      // ── Generate result back from code.js ──
+      if (msg.type === 'generate-result') {
+        generateBtn.disabled = false;
+        const data = msg.data;
+
+        if (data.success && data.options && data.options.length > 0) {
+          hasGeneratedOnce = true;
+          lastPrompt = promptInput.value.trim();
+          displayResults(data.options);
+        } else {
+          resultsSection.innerHTML = `
+            <div class="error-message">
+              <strong>⚠️ No results returned</strong><br>
+              The service returned an empty response. Please try again.
+            </div>
+          `;
+        }
+      }
+
+      // ── Generate error from code.js ──
+      if (msg.type === 'generate-error') {
+        generateBtn.disabled = false;
+        resultsSection.innerHTML = `
+          <div class="error-message">
+            <strong>⚠️ Service Temporarily Unavailable</strong><br>
+            ${msg.message}
+            <br><br>
+            <small>Please try again in a moment. If the problem persists, the service may be experiencing high load.</small>
+          </div>
+        `;
+        showToast('Failed to generate: ' + msg.message);
+      }
+
       if (msg.type === 'notification') {
         showToast(msg.message);
       }
-      
+
       if (msg.type === 'selection-status') {
         hasTextSelection = msg.hasTextSelection;
       }
 
-      // Populate textarea when a text layer is selected
       if (msg.type === 'selection-changed') {
         hasTextSelection = msg.hasTextSelection;
 
         if (msg.hasTextSelection && msg.textContent) {
-          // Populate textarea with layer text (preserves numbers, special chars, line breaks)
           promptInput.value = msg.textContent;
-
-          // Auto-resize textarea to fit content
           promptInput.style.height = 'auto';
           promptInput.style.height = Math.min(promptInput.scrollHeight, 80) + 'px';
-
-          // Show a subtle indicator that text was pulled from the layer
           showToast('✦ Layer text loaded');
 
-          // Auto-regenerate if we've already generated once
           if (hasGeneratedOnce) {
             lastPrompt = msg.textContent;
             generateCopy(msg.textContent);
           }
-        } else if (!msg.hasTextSelection) {
-          // Clear only if no text layer is selected and field was auto-populated
-          // Don't clear if user manually typed something
         }
       }
     };

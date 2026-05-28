@@ -1,8 +1,10 @@
 // Main plugin code - runs in the Figma sandbox
-figma.showUI(__html__, { width: 600, height: 600 });
+figma.showUI(__html__, { width: 480, height: 600 });
 
 // Store the currently selected text node
 let selectedTextNode = null;
+
+const BACKEND_URL = 'https://copy-engine-chi.vercel.app/api/generate';
 
 // Function to get text from selected layer (handles mixed styles)
 function getSelectedText() {
@@ -30,6 +32,35 @@ figma.ui.postMessage({
 
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
+
+    // ── Generate copy via backend ──────────────────────────────────────────
+    if (msg.type === 'generate-copy') {
+        try {
+            const response = await fetch(BACKEND_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    prompt: msg.prompt,
+                    tone: msg.tone,
+                    customRules: msg.customRules || null
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `Server error ${response.status}`);
+            }
+
+            const data = await response.json();
+            figma.ui.postMessage({ type: 'generate-result', data });
+
+        } catch (error) {
+            console.error('generate-copy error:', error);
+            figma.ui.postMessage({ type: 'generate-error', message: error.message });
+        }
+    }
+
+    // ── Apply copy to selected text layer ─────────────────────────────────
     if (msg.type === 'apply-copy') {
         if (!selectedTextNode) {
             figma.ui.postMessage({
@@ -74,6 +105,7 @@ figma.ui.onmessage = async (msg) => {
         }
     }
 
+    // ── API key management ─────────────────────────────────────────────────
     if (msg.type === 'save-api-key') {
         await figma.clientStorage.setAsync('GROQ_API_KEY', msg.apiKey);
         figma.ui.postMessage({ type: 'api-key-saved', success: true });
@@ -84,6 +116,7 @@ figma.ui.onmessage = async (msg) => {
         figma.ui.postMessage({ type: 'api-key-loaded', apiKey: apiKey || '' });
     }
 
+    // ── Selection check ────────────────────────────────────────────────────
     if (msg.type === 'check-selection') {
         const textContent = getSelectedText();
         figma.ui.postMessage({
