@@ -11,8 +11,6 @@
       "https://copy-engine-chi.vercel.app",
       "https://*.vercel.app"
     ],
-    "devAllowedDomains": [
-      "http://localhost:3000"
-    ]
+    "reasoning": "Required to call the copy generation backend"
   }
 }
