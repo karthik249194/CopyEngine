@@ -4,8 +4,6 @@ figma.showUI(__html__, { width: 480, height: 600 });
 // Store the currently selected text node
 let selectedTextNode = null;
 
-const BACKEND_URL = 'https://copy-engine-chi.vercel.app/api/generate';
-
 // Function to get text from selected layer (handles mixed styles)
 function getSelectedText() {
     const selection = figma.currentPage.selection;
@@ -33,31 +31,16 @@ figma.ui.postMessage({
 // Listen for messages from the UI
 figma.ui.onmessage = async (msg) => {
 
-    // ── Generate copy via backend ──────────────────────────────────────────
+    // ── Generate copy — forward to UI to do the actual fetch ──────────────
+    // UI iframe has a real browser origin; code.js runs as origin: null
+    // which is blocked by CORS preflight. Fetch must happen in ui.html.
     if (msg.type === 'generate-copy') {
-        try {
-            const response = await fetch(BACKEND_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    prompt: msg.prompt,
-                    tone: msg.tone,
-                    customRules: msg.customRules || null
-                })
-            });
-
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.error || `Server error ${response.status}`);
-            }
-
-            const data = await response.json();
-            figma.ui.postMessage({ type: 'generate-result', data });
-
-        } catch (error) {
-            console.error('generate-copy error:', error);
-            figma.ui.postMessage({ type: 'generate-error', message: error.message });
-        }
+        figma.ui.postMessage({
+            type: 'do-fetch',
+            prompt: msg.prompt,
+            tone: msg.tone,
+            customRules: msg.customRules || null
+        });
     }
 
     // ── Apply copy to selected text layer ─────────────────────────────────

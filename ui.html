@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v2 : fetch routed via code.js -->
+<!-- v3 : fetch runs directly in ui.html (real browser origin, no CORS null issue) -->
 <html>
 <head>
   <meta charset="utf-8">
@@ -436,6 +436,8 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    const BACKEND_URL = 'https://copy-engine-chi.vercel.app/api/generate';
+
     // State
     let hasTextSelection = false;
     let selectedTone = 'neutral';
@@ -446,13 +448,13 @@
     document.documentElement.setAttribute('data-theme', 'dark');
 
     // DOM elements
-    const themeToggle     = document.getElementById('themeToggle');
+    const themeToggle      = document.getElementById('themeToggle');
     const customRulesInput = document.getElementById('customRulesInput');
-    const promptInput     = document.getElementById('promptInput');
-    const generateBtn     = document.getElementById('generateBtn');
-    const resultsSection  = document.getElementById('resultsSection');
-    const toast           = document.getElementById('toast');
-    const toneChips       = document.querySelectorAll('.tone-chip');
+    const promptInput      = document.getElementById('promptInput');
+    const generateBtn      = document.getElementById('generateBtn');
+    const resultsSection   = document.getElementById('resultsSection');
+    const toast            = document.getElementById('toast');
+    const toneChips        = document.querySelectorAll('.tone-chip');
 
     // Theme toggle
     themeToggle.addEventListener('click', () => {
@@ -485,7 +487,7 @@
     parent.postMessage({ pluginMessage: { type: 'check-selection' } }, '*');
 
     // Generate button
-    generateBtn.addEventListener('click', async () => {
+    generateBtn.addEventListener('click', () => {
       const prompt = promptInput.value.trim();
       if (!prompt) {
         showToast('Please enter a scenario first');
@@ -494,8 +496,10 @@
       generateCopy(prompt);
     });
 
-    // ── generateCopy — sends to code.js, which does the fetch ──────────────
-    function generateCopy(userPrompt) {
+    // ── generateCopy — fetch runs directly here in the UI iframe ───────────
+    // ui.html has a real browser origin so CORS preflight works correctly.
+    // code.js runs as origin: null which is blocked by Vercel's CORS handling.
+    async function generateCopy(userPrompt) {
       generateBtn.disabled = true;
 
       resultsSection.innerHTML = `
@@ -507,15 +511,50 @@
 
       const customRules = customRulesInput.value.trim();
 
-      // Route through code.js instead of fetching directly
-      parent.postMessage({
-        pluginMessage: {
-          type: 'generate-copy',
-          prompt: userPrompt,
-          tone: selectedTone,
-          customRules: customRules || null
+      try {
+        const response = await fetch(BACKEND_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: userPrompt,
+            tone: selectedTone,
+            customRules: customRules || null
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `Server error ${response.status}`);
         }
-      }, '*');
+
+        const data = await response.json();
+        generateBtn.disabled = false;
+
+        if (data.success && data.options && data.options.length > 0) {
+          hasGeneratedOnce = true;
+          lastPrompt = userPrompt;
+          displayResults(data.options);
+        } else {
+          resultsSection.innerHTML = `
+            <div class="error-message">
+              <strong>⚠️ No results returned</strong><br>
+              The service returned an empty response. Please try again.
+            </div>
+          `;
+        }
+
+      } catch (error) {
+        generateBtn.disabled = false;
+        resultsSection.innerHTML = `
+          <div class="error-message">
+            <strong>⚠️ Service Temporarily Unavailable</strong><br>
+            ${error.message}
+            <br><br>
+            <small>Please try again in a moment. If the problem persists, the service may be experiencing high load.</small>
+          </div>
+        `;
+        showToast('Failed to generate: ' + error.message);
+      }
     }
 
     // Display results
@@ -578,45 +617,8 @@
       const msg = event.data.pluginMessage;
       if (!msg) return;
 
-      // ── Generate result back from code.js ──
-      if (msg.type === 'generate-result') {
-        generateBtn.disabled = false;
-        const data = msg.data;
-
-        if (data.success && data.options && data.options.length > 0) {
-          hasGeneratedOnce = true;
-          lastPrompt = promptInput.value.trim();
-          displayResults(data.options);
-        } else {
-          resultsSection.innerHTML = `
-            <div class="error-message">
-              <strong>⚠️ No results returned</strong><br>
-              The service returned an empty response. Please try again.
-            </div>
-          `;
-        }
-      }
-
-      // ── Generate error from code.js ──
-      if (msg.type === 'generate-error') {
-        generateBtn.disabled = false;
-        resultsSection.innerHTML = `
-          <div class="error-message">
-            <strong>⚠️ Service Temporarily Unavailable</strong><br>
-            ${msg.message}
-            <br><br>
-            <small>Please try again in a moment. If the problem persists, the service may be experiencing high load.</small>
-          </div>
-        `;
-        showToast('Failed to generate: ' + msg.message);
-      }
-
       if (msg.type === 'notification') {
         showToast(msg.message);
-      }
-
-      if (msg.type === 'selection-status') {
-        hasTextSelection = msg.hasTextSelection;
       }
 
       if (msg.type === 'selection-changed') {
