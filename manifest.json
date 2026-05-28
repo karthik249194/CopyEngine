@@ -8,9 +8,8 @@
   "documentAccess": "dynamic-page",
   "networkAccess": {
     "allowedDomains": [
-      "https://copy-engine-chi.vercel.app/",
-      "https://*.vercel.app",
-      "https://api.groq.com"
+      "https://copy-engine-chi.vercel.app",
+      "https://*.vercel.app"
     ],
     "devAllowedDomains": [
       "http://localhost:3000"
